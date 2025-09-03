@@ -37,35 +37,6 @@ A high-performance full-stack blog application built with the MERN stack (MongoD
 - **Context API**: Global state management
 - **Responsive Design**: Mobile-first approach
 
-## 📁 Project Structure
-
-```
-mern-task/
-├── server/                 # Backend Express.js application
-│   ├── config/            # Database and Redis configuration
-│   ├── controllers/       # Route controllers
-│   ├── middleware/        # Custom middleware
-│   ├── models/           # MongoDB models
-│   ├── routes/           # API routes
-│   ├── utils/            # Utility functions
-│   ├── .env              # Environment variables
-│   ├── .env.example      # Environment template
-│   └── server.js         # Main server file
-├── client/               # Frontend React application
-│   ├── public/          # Static files
-│   ├── src/
-│   │   ├── components/  # Reusable React components
-│   │   ├── contexts/    # React contexts
-│   │   ├── pages/       # Page components
-│   │   ├── services/    # API services
-│   │   └── utils/       # Utility functions
-│   ├── tailwind.config.js
-│   └── package.json
-├── .gitignore
-├── README.md
-└── package.json
-```
-
 ## 🛠 Technology Stack
 
 ### Backend
@@ -166,10 +137,6 @@ sudo systemctl start mongod
 
 # Start Redis (Ubuntu/Debian)
 sudo systemctl start redis-server
-
-# Alternative: Using Docker
-docker run -d -p 27017:27017 --name mongodb mongo
-docker run -d -p 6379:6379 --name redis redis
 ```
 
 ### 5. Run the Application
@@ -303,19 +270,6 @@ MONGODB_URI=mongodb://localhost:27017/mern-blog
 REDIS_URL=redis://localhost:6379
 ```
 
-## 🚢 Deployment
-
-### Using Docker
-
-```bash
-# Build Docker images
-docker build -t mern-blog-server ./server
-docker build -t mern-blog-client ./client
-
-# Run with Docker Compose (create docker-compose.yml)
-docker-compose up -d
-```
-
 ### Environment Variables for Production
 
 ```env
@@ -351,65 +305,3 @@ mongo mern-blog --eval "db.stats()"
 mongo mern-blog --eval "db.setProfilingLevel(1, {slowms: 100})"
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## 📜 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **MongoDB Connection Error**
-   ```bash
-   # Check if MongoDB is running
-   sudo systemctl status mongod
-   ```
-
-2. **Redis Connection Error**
-   ```bash
-   # Check if Redis is running
-   redis-cli ping
-   ```
-
-3. **Port Already in Use**
-   ```bash
-   # Kill process on port 5000
-   lsof -ti:5000 | xargs kill -9
-   ```
-
-4. **Cache Not Working**
-   - Verify Redis connection
-   - Check environment variables
-   - Monitor Redis logs
-
-### Performance Tips
-
-1. **Increase Redis Memory**
-   ```bash
-   redis-cli config set maxmemory 256mb
-   ```
-
-2. **MongoDB Index Creation**
-   ```javascript
-   db.blogs.createIndex({ title: "text", content: "text" })
-   ```
-
-3. **Monitor Query Performance**
-   ```javascript
-   db.blogs.find().explain("executionStats")
-   ```
-
-## 📚 Additional Resources
-
-- [MongoDB Optimization Guide](https://docs.mongodb.com/manual/optimization/)
-- [Redis Best Practices](https://redis.io/topics/best-practices)
-- [Express.js Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
-- [React Performance Guide](https://react.dev/learn/render-and-commit)
