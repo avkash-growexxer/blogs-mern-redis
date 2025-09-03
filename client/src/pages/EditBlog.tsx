@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { blogAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-const CreateBlog: React.FC = () => {
+const EditBlog: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -24,24 +25,56 @@ const CreateBlog: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Redirect if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  const createBlogMutation = useMutation({
-    mutationFn: blogAPI.createBlog,
+  // Fetch blog data
+  const { data: blogData, isLoading, error } = useQuery({
+    queryKey: ['blog', id],
+    queryFn: () => blogAPI.getBlogById(id!),
+    enabled: !!id && isAuthenticated,
+  });
+
+  const blog = blogData?.data.data?.blog;
+
+  // Check if user can edit this blog
+  useEffect(() => {
+    if (blog && user) {
+      if (blog.author._id !== user._id && user.role !== 'admin') {
+        navigate('/');
+        return;
+      }
+      
+      // Pre-fill form with blog data
+      setFormData({
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt || '',
+        category: blog.category,
+        tags: blog.tags.join(', '),
+        featuredImage: blog.featuredImage || '',
+        status: blog.status,
+        seoTitle: blog.seoTitle || '',
+        seoDescription: blog.seoDescription || '',
+      });
+    }
+  }, [blog, user, navigate]);
+
+  const updateBlogMutation = useMutation({
+    mutationFn: (data: any) => blogAPI.updateBlog(id!, data),
     onSuccess: (response) => {
       // Invalidate and refetch blogs
       queryClient.invalidateQueries({ queryKey: ['blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blog', id] });
       queryClient.invalidateQueries({ queryKey: ['trending-blogs'] });
       
-      const blogId = response.data.data?.blog._id;
-      navigate(`/blog/${blogId}`);
+      navigate(`/blog/${id}`);
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create blog';
+      const errorMessage = error.response?.data?.message || 'Failed to update blog';
       setErrors({ submit: errorMessage });
     },
   });
@@ -104,7 +137,7 @@ const CreateBlog: React.FC = () => {
         .filter(tag => tag.length > 0),
     };
 
-    createBlogMutation.mutate(blogData);
+    updateBlogMutation.mutate(blogData);
   };
 
   const categories = [
@@ -116,13 +149,59 @@ const CreateBlog: React.FC = () => {
     return null; // Will redirect
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="space-y-6">
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Blog Not Found</h1>
+            <p className="text-gray-600 mb-8">The blog post you're trying to edit doesn't exist.</p>
+            <button 
+              onClick={() => navigate(-1)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Blog</h1>
-            <p className="text-gray-600 mt-1">Share your thoughts with the world</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Edit Blog</h1>
+                <p className="text-gray-600 mt-1">Update your blog post</p>
+              </div>
+              <button
+                onClick={() => navigate(`/blog/${id}`)}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -204,21 +283,39 @@ const CreateBlog: React.FC = () => {
                 </select>
               </div>
 
-              {/* Tags */}
+              {/* Status */}
               <div>
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tags
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
                 </label>
-                <input
-                  type="text"
-                  id="tags"
-                  name="tags"
-                  value={formData.tags}
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Comma-separated tags (e.g., react, javascript, web)"
-                />
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
               </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
+                Tags
+              </label>
+              <input
+                type="text"
+                id="tags"
+                name="tags"
+                value={formData.tags}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Comma-separated tags (e.g., react, javascript, web)"
+              />
             </div>
 
             {/* Featured Image */}
@@ -291,7 +388,7 @@ const CreateBlog: React.FC = () => {
             <div className="flex items-center justify-between pt-6 border-t">
               <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(`/blog/${id}`)}
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -301,19 +398,19 @@ const CreateBlog: React.FC = () => {
                 <button
                   type="submit"
                   onClick={() => setFormData(prev => ({ ...prev, status: 'draft' }))}
-                  disabled={createBlogMutation.isPending}
+                  disabled={updateBlogMutation.isPending}
                   className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 transition-colors"
                 >
-                  {createBlogMutation.isPending ? 'Saving...' : 'Save Draft'}
+                  {updateBlogMutation.isPending ? 'Saving...' : 'Save as Draft'}
                 </button>
                 
                 <button
                   type="submit"
                   onClick={() => setFormData(prev => ({ ...prev, status: 'published' }))}
-                  disabled={createBlogMutation.isPending}
+                  disabled={updateBlogMutation.isPending}
                   className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  {createBlogMutation.isPending ? 'Publishing...' : 'Publish'}
+                  {updateBlogMutation.isPending ? 'Updating...' : 'Update & Publish'}
                 </button>
               </div>
             </div>
@@ -324,4 +421,4 @@ const CreateBlog: React.FC = () => {
   );
 };
 
-export default CreateBlog;
+export default EditBlog;

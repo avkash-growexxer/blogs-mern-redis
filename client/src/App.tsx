@@ -5,8 +5,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import TrendingBlogs from './pages/TrendingBlogs';
 import CreateBlog from './pages/CreateBlog';
+import BlogDetail from './pages/BlogDetail';
+import EditBlog from './pages/EditBlog';
 import './App.css';
 
 // Create a client
@@ -30,8 +33,11 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/trending" element={<TrendingBlogs />} />
                 <Route path="/create" element={<CreateBlog />} />
+                <Route path="/blog/:id" element={<BlogDetail />} />
+                <Route path="/blog/:id/edit" element={<EditBlog />} />
               </Routes>
             </main>
           </div>

@@ -96,6 +96,8 @@ export interface Blog {
   likesCount: number;
   commentsCount: number;
   trendingScore?: number;
+  seoTitle?: string;
+  seoDescription?: string;
 }
 
 export interface Comment {
@@ -184,7 +186,7 @@ export const blogAPI = {
     category?: string;
     tags?: string[];
     featuredImage?: string;
-    status?: 'draft' | 'published';
+    status?: 'draft' | 'published' | 'archived';
     seoTitle?: string;
     seoDescription?: string;
   }): Promise<AxiosResponse<ApiResponse<{ blog: Blog }>>> =>

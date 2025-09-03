@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { blogAPI, Blog } from '../services/api';
 import BlogCard from '../components/BlogCard';
 
@@ -9,16 +9,28 @@ const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Debounced search term to avoid too many API calls
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset page when search changes
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Fetch blogs
   const { data: blogsData, isLoading, error } = useQuery({
-    queryKey: ['blogs', currentPage, searchTerm, selectedCategory],
+    queryKey: ['blogs', currentPage, debouncedSearchTerm, selectedCategory],
     queryFn: () => blogAPI.getBlogs({
       page: currentPage,
       limit: 12,
-      search: searchTerm || undefined,
+      search: debouncedSearchTerm || undefined,
       category: selectedCategory || undefined,
     }),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch trending blogs for sidebar
@@ -39,7 +51,6 @@ const Home: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1);
   };
 
   const handleCategoryChange = (category: string) => {

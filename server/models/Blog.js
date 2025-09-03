@@ -140,10 +140,8 @@ blogSchema.index({ createdAt: -1 });
 blogSchema.index({ views: -1 });
 blogSchema.index({ category: 1 });
 blogSchema.index({ tags: 1 });
-
-// Compound indexes for trending blogs
-blogSchema.index({ views: -1, 'likes': -1, 'comments': -1 });
 blogSchema.index({ status: 1, publishedAt: -1 });
+blogSchema.index({ views: -1, status: 1 });
 
 // Text index for search functionality
 blogSchema.index({ 

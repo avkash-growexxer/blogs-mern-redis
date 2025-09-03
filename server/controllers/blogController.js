@@ -36,7 +36,15 @@ const getBlogs = async (req, res) => {
     }
 
     if (search) {
-      query.$text = { $search: search };
+      // Use flexible search that works with short terms
+      const searchRegex = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { title: searchRegex },
+        { content: searchRegex },
+        { excerpt: searchRegex },
+        { tags: { $in: [searchRegex] } },
+        { category: searchRegex }
+      ];
     }
 
     // Calculate pagination

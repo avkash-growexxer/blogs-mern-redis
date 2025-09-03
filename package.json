@@ -1,12 +1,48 @@
 {
   "name": "mern-task",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "MERN stack blog application with Redis caching and performance optimizations",
+  "main": "server/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\" \"npm run services:check\"",
+    "start": "concurrently \"npm run server:start\" \"npm run client:start\"",
+    "server:dev": "cd server && npm run dev",
+    "server:start": "cd server && npm start",
+    "client:dev": "cd client && npm start",
+    "client:start": "cd client && npm start",
+    "client:build": "cd client && npm run build",
+    "services:start": "npm run services:mongodb && npm run services:redis",
+    "services:mongodb": "sudo systemctl start mongod || echo 'MongoDB start failed - may need manual start'",
+    "services:redis": "sudo systemctl start redis-server || sudo systemctl start redis || echo 'Redis start failed - may need manual start'",
+    "services:check": "npm run services:check:mongodb && npm run services:check:redis",
+    "services:check:mongodb": "timeout 5 mongosh --eval 'db.adminCommand(\"ping\")' --quiet || echo '⚠️  MongoDB not available - run: sudo systemctl start mongod'",
+    "services:check:redis": "timeout 5 redis-cli ping || echo '⚠️  Redis not available - run: sudo systemctl start redis-server'",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "npm run client:build",
+    "test": "cd server && npm test && cd ../client && npm test",
+    "lint": "cd server && npm run lint 2>/dev/null || echo 'No lint script in server' && cd ../client && npm run lint 2>/dev/null || echo 'No lint script in client'",
+    "clean": "rm -rf node_modules server/node_modules client/node_modules client/build",
+    "setup": "npm run install:all && npm run services:start && echo '🚀 Setup complete! Run npm run dev to start the application'"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "keywords": [
+    "mern",
+    "mongodb", 
+    "express",
+    "react",
+    "nodejs",
+    "redis",
+    "blog",
+    "typescript",
+    "performance",
+    "caching"
+  ],
+  "author": "MERN Developer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
